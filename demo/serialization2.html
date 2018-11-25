@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Serialization demo</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../dist/gridstack.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.0/jquery-ui.js"></script>
+    <!--pour que ca fonctionne sur touch device-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.5.0/lodash.min.js"></script>
+
+    <script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/0.3.0/gridstack.js'></script>
+    <script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/0.3.0/gridstack.jQueryUI.js'></script>
+
+    <style type="text/css">
+        .grid-stack {
+            background: black;
+        }
+
+        .grid-stack-item-content {
+            color: #2c3e50;
+            text-align: center;
+            background-color: grey;
+            overflow:hidden !important;
+        }
+        .dragbutton{
+            width: 20px;
+            height: 20px;
+            right: 5px;
+            top: 0;
+        }
+    </style>
+</head>
+<body onload="saveData()">
+    <div class="container-fluid">
+        <h1>Serialization demo</h1>
+
+        <div>
+            <a class="btn btn-default" id="save-grid" onclick="saveData()" href="#">Save Grid</a>
+            <a class="btn btn-default" id="load-grid" href="#">Load Grid</a>
+            <a class="btn btn-default" id="clear-grid" href="#">Clear Grid</a>
+        </div>
+
+        <br/>
+
+        <div class="grid-stack">
+            <div class="grid-stack-item"
+                data-gs-x="5" data-gs-y="8"
+                data-gs-width="3" data-gs-height="4">
+                    <div class="grid-stack-item-content draggable">
+                        <p class="ui-widget-content dragbutton" style="z-index: 10; display: none; position: absolute; cursor:move; margin-left:90%; color: pink;"><i class="fa fa-arrows-alt dragbutton" aria-hidden="true"></i></p>
+                        <!-- dont use ifraaaames thats ugly -->
+                        <iframe src="http://user:demo@demo2.intelligenceindustrielle.com/dashboard5" style="width:100%;height:100%;border:none;" scrolling="no"></iframe>
+                    </div>
+            </div>
+            <div class="grid-stack-item"
+                data-gs-x="5" data-gs-y="4"
+                data-gs-width="7" data-gs-height="4">
+                    <div class="grid-stack-item-content draggable">
+                        <p class="ui-widget-content dragbutton" style="z-index: 10; display: none; position: absolute; cursor:move; margin-left:90%; color: pink;"><i class="fa fa-arrows-alt dragbutton" aria-hidden="true"></i></p>
+                        <!-- dont use ifraaaames thats ugly -->
+                        <iframe src="http://user:demo@demo2.intelligenceindustrielle.com/dashboard2" style="width:100%;height:100%;border:none;" scrolling="no"></iframe>
+                    </div>
+            </div>
+        </div>
+
+        <hr/>
+
+        <textarea id="saved-data" cols="100" rows="20" readonly="readonly"></textarea>
+
+    </div>
+
+
+    <script type="text/javascript">
+
+        $(document).ready(function(e){
+                $(".draggable").hover(function() { 
+                    $(this).find(':first-child').show();
+                    }, function() { 
+                    $(this).find(':first-child').hide();
+                });
+        });
+
+        //est la variable qui devra etre sauvegardé dans la base de donnee
+        var gridItems = [];
+        function saveData() {
+
+            gridItems = [];
+
+            $('.grid-stack-item.ui-draggable').each(function () {
+                var $this = $(this);
+                gridItems.push({
+                    x: $this.attr('data-gs-x'),
+                    y: $this.attr('data-gs-y'),
+                    width: $this.attr('data-gs-width'),
+                    height: $this.attr('data-gs-height'),
+                    content: $('.grid-stack-item-content', $this).html()
+                });
+            });
+            $('#saved-data').val(JSON.stringify(gridItems, null, '    '));
+            return(JSON.stringify(gridItems));
+        }
+
+        $(function () {
+            var options = {
+                cellHeight: 80,
+                verticalMargin: 10
+            };
+            $('.grid-stack').gridstack(options);
+
+            new function () {
+                this.serializedData = gridItems;
+
+                this.grid = $('.grid-stack').data('gridstack');
+
+                this.loadGrid = function () {
+                    this.grid.removeAll();
+                    var items = GridStackUI.Utils.sort(gridItems);
+                    _.each(items, function (node) {
+                        this.grid.addWidget($('<div class="grid-stack-item"><div class="grid-stack-item-content draggable">' + node.content + '</div></div>' ),
+                            node.x, node.y, node.width, node.height);
+                    }, this);
+
+                    $(document).ready(function(e){
+                            $(".draggable").hover(function() { 
+                                $(this).find(':first-child').show();
+                                }, function() { 
+                                $(this).find(':first-child').hide();
+                            });
+                    });
+
+                    return false;
+                }.bind(this);
+
+                this.clearGrid = function () {
+                    this.grid.removeAll();
+                    return false;
+                }.bind(this);
+
+                $('#load-grid').click(this.loadGrid);
+                $('#clear-grid').click(this.clearGrid);
+
+            };
+        });
+    </script>
+</body>
+</html>
